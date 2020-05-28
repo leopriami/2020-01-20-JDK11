@@ -12,14 +12,14 @@ public class TestArtsmiaDAO {
 		ArtsmiaDAO dao = new ArtsmiaDAO();
 
 		System.out.println("Test objects:");
-		List<ArtObject> objects = dao.listObjects();
-		System.out.println(objects.get(0));
-		System.out.println(objects.size());
+		//List<ArtObject> objects = dao.listObjects();
+		//System.out.println(objects.get(0));
+		//System.out.println(objects.size());
 		
 		System.out.println("Test exhibitions:");
-		List<Exhibition> exhibitions = dao.listExhibitions();
-		System.out.println(exhibitions.get(0));
-		System.out.println(exhibitions.size());
+		//List<Exhibition> exhibitions = dao.listExhibitions();
+		//System.out.println(exhibitions.get(0));
+		//System.out.println(exhibitions.size());
 
 	}
 

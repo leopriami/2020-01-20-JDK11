@@ -3,6 +3,7 @@ package it.polito.tdp.artsmia;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.artsmia.model.Arco;
 import it.polito.tdp.artsmia.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -31,7 +32,7 @@ public class ArtsmiaController {
     private Button btnCalcolaPercorso;
 
     @FXML
-    private ComboBox<?> boxRuolo;
+    private ComboBox<String> boxRuolo;
 
     @FXML
     private TextField txtArtista;
@@ -42,23 +43,55 @@ public class ArtsmiaController {
     @FXML
     void doArtistiConnessi(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Calcola artisti connessi");
+    	txtResult.appendText("Calcola artisti connessi\n");
+    	if(this.model.getGrafo()==null) {
+    		txtResult.appendText("Prima il grafo");
+    		return;
+    	}
+    	for(Arco a : this.model.getArchi()) {
+    		txtResult.appendText(a.getA1()+" "+a.getA2()+" "+a.getPeso()+"\n");
+    	}
     }
 
     @FXML
     void doCalcolaPercorso(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Calcola percorso");
+    	txtResult.appendText("Calcola percorso\n");
+    	Integer artista = -1;
+    	try {
+    		artista = Integer.parseInt(txtArtista.getText());
+    	}
+    	catch(Exception e) {
+    		txtResult.appendText("Inserisci codice artista");
+    		return;
+    	}
+    	if(!this.model.getArtisti().contains(artista)) {
+    		txtResult.appendText("Artista inesistente");
+    		return;
+    	}
+    	this.model.calcolaPercorso(artista);
+    	for(Integer a : this.model.getOttimo()) {
+    		txtResult.appendText(Integer.toString(a)+"->");
+    	}
+    	txtResult.appendText("\npeso ottimo: "+Integer.toString(this.model.getPesoOttimo()));
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Crea grafo");
+    	txtResult.appendText("Crea grafo\n");
+    	String s = boxRuolo.getValue();
+    	if(s==null) {
+    		txtResult.appendText("Scegli un ruolo\n");
+    		return;
+    	}
+    	this.model.creaGrafo(s);
+    	txtResult.appendText("Grafo generato\n");
     }
 
     public void setModel(Model model) {
     	this.model = model;
+    	boxRuolo.getItems().addAll(this.model.ruoli());
     }
 
     
