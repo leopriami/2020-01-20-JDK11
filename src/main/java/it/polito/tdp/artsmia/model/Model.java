@@ -1,110 +1,242 @@
 package it.polito.tdp.artsmia.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
-import it.polito.tdp.artsmia.db.ArtsmiaDAO;
-
 public class Model {
 	
-	private SimpleWeightedGraph<Integer, DefaultWeightedEdge> grafo;
-	private ArtsmiaDAO dao;
-	private List<Arco> archi;
-	private List<Integer> artisti;
-	private List<Integer> ottimo;
-	private int pesoOttimo = -1;
+	private SimpleWeightedGraph<Vertex, DefaultWeightedEdge> grafo;
+	private List<Vertex> nodi = new ArrayList<>();
+	private List<Edge> archi = new ArrayList<>();
+	private List<Cammino> cammini;
 	
-	public Model() {
-		this.dao = new ArtsmiaDAO();
-	}
+	private List<Vertex> camminoOttimo;
+	private double pesoOttimo = 0;
 	
-	public void creaGrafo(String ruolo) {
-		archi = new ArrayList<>(dao.adiacenze(ruolo));
-		artisti = new ArrayList<>(dao.artisti(ruolo));
+	public void creaGrafo() {
 		grafo = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
-		for(int a : artisti) grafo.addVertex(a);
-		for(Arco a : archi) {
-			
-				Graphs.addEdge(grafo, a.getA1(), a.getA2(), a.getPeso());
-			
+		for(Vertex v : nodi) grafo.addVertex(v);
+		for(Edge e : archi) {
+			Graphs.addEdge(grafo, e.getV1(), e.getV2(), e.getWeight());
 		}
 	}
 	
-	public List<String> ruoli(){
-		return dao.ruoli();
-	}
-
-	public List<Arco> getArchi() {
-		return archi;
-	}
-
-	public void setArchi(List<Arco> archi) {
-		this.archi = archi;
-	}
-
-	public SimpleWeightedGraph<Integer, DefaultWeightedEdge> getGrafo() {
-		return grafo;
-	}
-
-	public void setGrafo(SimpleWeightedGraph<Integer, DefaultWeightedEdge> grafo) {
-		this.grafo = grafo;
-	}
-
-	public List<Integer> getArtisti() {
-		return artisti;
-	}
-
-	public void setArtisti(List<Integer> artisti) {
-		this.artisti = artisti;
+	public List<Vertex> cercaOttimo(Vertex v1, Vertex v2) {
+		List<Vertex> parziale = new ArrayList<>();
+		parziale.add(v1);
+		camminoOttimo = new ArrayList<>();
+		//cercaCamminoMassimoLunghezza(parziale, v2);
+		//cercaCamminoMassimoPeso(parziale, v2, 0);
+		//cercaCamminoMassimoLunghezza1Vertice(parziale);
+		cercaCamminoMassimoPeso1Vertice(parziale, 0);
+		//cercaCamminoMassimoLunghezzaPesiCrescenti(parziale, 0);
+		return camminoOttimo;
 	}
 	
-	public List<Integer> calcolaPercorso(Integer artista){
-		List<Integer> parziale = new ArrayList<Integer>();
-		List<Integer> pesi = new ArrayList<Integer>();
-		for(DefaultWeightedEdge e : grafo.edgesOf(artista)) {
-			pesi.add((int)grafo.getEdgeWeight(e));
-		}
-		parziale.add(artista);
-		ottimo = new ArrayList<Integer>(parziale);
-		for(Integer p : pesi) {
-			cerca(parziale, artista, p);
-		}
-		return ottimo;
+	
+	
+	public List<Cammino> cercaCamminiOrdinati(Vertex v1, Vertex v2){
+		List<Vertex> parziale = new ArrayList<>();
+		parziale.add(v1);
+		cammini = new ArrayList<>();
+		cercaCammini(parziale, v2, 0);
+		Collections.sort(cammini, new Comparator<Cammino>() {
+			public int compare(Cammino c1, Cammino c2) {
+				if(c1.getWeight() > c2.getWeight()) {
+					return 1;
+				}
+				else return -1;
+			}
+		});
+		return cammini;
 	}
 
-	// cammino aciclico con piu' nodi possibile
-	private void cerca(List<Integer> parziale, Integer artista, Integer peso) {
-		for(Integer a : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
-			if(!parziale.contains(a) && peso==grafo.getEdgeWeight(grafo.getEdge(parziale.get(parziale.size()-1), a))) {
-				parziale.add(a);
-				cerca(parziale, artista, peso);
+	
+	
+	private void cercaCamminoMassimoLunghezza(List<Vertex> parziale, Vertex v2) {
+		if(parziale.contains(v2)) {
+			if(parziale.size() > camminoOttimo.size()) {
+				camminoOttimo = new ArrayList<>(parziale);
+			}
+			return;
+		}
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				parziale.add(v);
+				cercaCamminoMassimoLunghezza(parziale, v2);
 				parziale.remove(parziale.size()-1);
 			}
 		}
-		if(parziale.size()>ottimo.size()) {
-			ottimo = new ArrayList<Integer>(parziale);
+	}
+	
+	
+
+	private void cercaCamminoMassimoPeso(List<Vertex> parziale, Vertex v2, double peso) {
+		if(parziale.contains(v2)) {
+			if(peso > pesoOttimo) {
+				camminoOttimo = new ArrayList<>(parziale);
+				pesoOttimo = peso;
+			}
+			return;
+		}
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				double pesoUltimoAggiunto = grafo.getEdgeWeight(grafo.getEdge(parziale.get(parziale.size()-1), v));
+				peso = peso + pesoUltimoAggiunto;
+				parziale.add(v);
+				cercaCamminoMassimoPeso(parziale, v2, peso);
+				parziale.remove(parziale.size()-1);
+				peso = peso - pesoUltimoAggiunto;
+			}
+		}
+	}
+	
+	
+	
+	private void cercaCamminoMassimoLunghezza1Vertice(List<Vertex> parziale) {
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				parziale.add(v);
+				cercaCamminoMassimoLunghezza1Vertice(parziale);
+				parziale.remove(parziale.size()-1);
+			}
+		}
+		if(parziale.size() > camminoOttimo.size()) {
+			camminoOttimo = new ArrayList<>(parziale);
+		}
+	}
+	
+	
+	
+	private void cercaCamminoMassimoPeso1Vertice(List<Vertex> parziale, double peso) {
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				double pesoUltimoAggiunto = grafo.getEdgeWeight(grafo.getEdge(parziale.get(parziale.size()-1), v));
+				peso = peso + pesoUltimoAggiunto;
+				parziale.add(v);
+				cercaCamminoMassimoPeso1Vertice(parziale, peso);
+				parziale.remove(parziale.size()-1);
+				peso = peso - pesoUltimoAggiunto;
+			}
+		}
+		if(peso > pesoOttimo) {
+			camminoOttimo = new ArrayList<>(parziale);
 			pesoOttimo = peso;
 		}
 	}
-
-	public List<Integer> getOttimo() {
-		return ottimo;
+	
+	
+	
+	private void cercaCammini(List<Vertex> parziale, Vertex v2, double peso) {
+		if(parziale.contains(v2)) {
+			cammini.add(new Cammino(parziale, peso));
+			return;
+		}
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				double pesoUltimoAggiunto = grafo.getEdgeWeight(grafo.getEdge(parziale.get(parziale.size()-1), v));
+				peso = peso + pesoUltimoAggiunto;
+				parziale.add(v);
+				cercaCammini(parziale, v2, peso);
+				parziale.remove(parziale.size()-1);
+				peso = peso - pesoUltimoAggiunto;
+			}
+		}
+	}
+	
+	
+	
+	private void cercaCamminoMassimoLunghezzaPesiCrescenti(List<Vertex> parziale, double peso) {
+		for(Vertex v : Graphs.neighborSetOf(grafo, parziale.get(parziale.size()-1))) {
+			if(!parziale.contains(v)) {
+				double pesoUltimoAggiunto = grafo.getEdgeWeight(grafo.getEdge(parziale.get(parziale.size()-1), v));
+				if(peso <= pesoUltimoAggiunto) {
+					peso = pesoUltimoAggiunto;
+					parziale.add(v);
+					cercaCamminoMassimoLunghezzaPesiCrescenti(parziale, peso);
+					parziale.remove(parziale.size()-1);
+					peso = peso - pesoUltimoAggiunto;
+				}
+			}
+		}
+		if(parziale.size() > camminoOttimo.size()) {
+			camminoOttimo = new ArrayList<>(parziale);
+		}
 	}
 
-	public void setOttimo(List<Integer> ottimo) {
-		this.ottimo = ottimo;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	public SimpleWeightedGraph<Vertex, DefaultWeightedEdge> getGrafo() {
+		return grafo;
 	}
 
-	public int getPesoOttimo() {
+	public void setGrafo(SimpleWeightedGraph<Vertex, DefaultWeightedEdge> grafo) {
+		this.grafo = grafo;
+	}
+
+	public List<Vertex> getNodi() {
+		return nodi;
+	}
+
+	public void setNodi(List<Vertex> nodi) {
+		this.nodi = nodi;
+	}
+
+	public List<Edge> getArchi() {
+		return archi;
+	}
+
+	public void setArchi(List<Edge> archi) {
+		this.archi = archi;
+	}
+
+	public List<Vertex> getCamminoOttimo() {
+		return camminoOttimo;
+	}
+
+	public void setCamminoOttimo(List<Vertex> camminoOttimo) {
+		this.camminoOttimo = camminoOttimo;
+	}
+
+	public double getPesoOttimo() {
 		return pesoOttimo;
 	}
 
-	public void setPesoOttimo(int pesoOttimo) {
+	public void setPesoOttimo(double pesoOttimo) {
 		this.pesoOttimo = pesoOttimo;
 	}
+
+	public List<Cammino> getCammini() {
+		return cammini;
+	}
+
+	public void setCammini(List<Cammino> cammini) {
+		this.cammini = cammini;
+	}
+	
+	
+	
+	
 
 }
