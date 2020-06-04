@@ -3,9 +3,12 @@ package it.polito.tdp.artsmia.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jgrapht.Graphs;
+import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
@@ -168,6 +171,32 @@ public class Model {
 		if(parziale.size() > camminoOttimo.size()) {
 			camminoOttimo = new ArrayList<>(parziale);
 		}
+	}
+	
+	
+	
+	public List<Vertex> componenteConnessa(Vertex v1){
+		List<Vertex> componente = new ArrayList<>();
+		cercaComponente(v1, componente);
+		return componente;
+	}
+	
+	
+	
+	private void cercaComponente(Vertex v1, List<Vertex> componente) {
+		componente.add(v1);
+		for(Vertex v : Graphs.neighborListOf(grafo, v1)) {
+			if(!componente.contains(v)) {
+				cercaComponente(v, componente);
+			}
+		}
+	}
+	
+	
+	
+	public int numeroComponenti() {
+		ConnectivityInspector<Vertex, DefaultWeightedEdge> ci = new ConnectivityInspector<Vertex, DefaultWeightedEdge>(grafo);
+		return ci.connectedSets().size();
 	}
 
 	
